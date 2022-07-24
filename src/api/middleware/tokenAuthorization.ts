@@ -11,7 +11,7 @@ function authorizeToken(
     let authHeader = req.headers["authorization"];
     let token = authHeader && authHeader.split(' ')[1];
     if (!token) return res
-        .status(401)
+        .status(400)
         .send("Athentication token missing.");
 
     let [passedVerification, tokenInfo] = verifyAccessTokenAndGetInfo(token);

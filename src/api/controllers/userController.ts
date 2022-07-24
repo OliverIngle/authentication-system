@@ -30,18 +30,15 @@ function createNewUser(req: Request, res: Response) {
             .status(400)
             .send("Fields missing.")
     }
-
     let passwordHash = hash(password);
-
     if ( !User.save(new User(username, passwordHash)) ) {
         return res
-            .status(400)
-            .send("username already taken.")
+            .status(403)
+            .send("Username already taken.")
     }
-
     res
-        .status(200)
-        .send("Successfull creation.");
+        .status(201)
+        .send("User succesfully created..");
 }
 
 
@@ -59,12 +56,12 @@ function login(req: Request, res: Response) {
         user = User.findOne(username);
     } catch(err) {
         return res
-            .status(500)
+            .status(404)
             .send((err as Error).message)
     }
     if (!compare(user.passwordHash, password)) {
         return res
-            .status(405)
+            .status(401)
             .send("Login failed.")
     }
     let payload = genTokenPayload(user);
@@ -72,7 +69,7 @@ function login(req: Request, res: Response) {
     let refreshToken = genRefreshToken(payload);
     pushRefreshToken(refreshToken);
     res
-        .status(200)
+        .status(201)
         .json({
             message: "Successfull login.",
             accessToken,
@@ -89,11 +86,11 @@ function getNewAccessToken(req: Request, res: Response) {
         .status(400)
         .send("Refresh token missing.");
     if ( !refreshTokenExists(refreshToken) ) return res
-        .status(400)
+        .status(404)
         .send("Refresh token not found.");
     let [passedVerification, tokenInfo] = verifyRefreshTokenAndGetInfo(refreshToken);
     if ( !(passedVerification && tokenInfo) ) return res
-        .status(403)
+        .status(401)
         .send("Invalid refresh token.");
     let user = User.findOne(tokenInfo.name);
     let payload = genTokenPayload(user);
@@ -113,7 +110,7 @@ function logout(req: Request, res: Response) {
         .status(400)
         .send("Refresh token missing.");
     deleteToken(refreshToken);
-    res.status(203).send("Token successfully deleted.")
+    res.status(200).send("Token successfully deleted.")
 }
 
 

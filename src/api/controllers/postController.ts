@@ -13,24 +13,19 @@ function newPost(req: Request, res: Response) {
     let { text } = req.body;
     let token = req.tokenInfo;
     if (!token) {
-        return res.status(200).send("Login required.")
+        return res.status(401).send("Login required.")
     }
 
     try {
-        let username = (token as TokenInfo).name;
-        if (!username) {
-            return res
-                .status(500)
-                .send("Failed to find username.")
-        }
+        let username = token.name;
         new Post(username, text).save()
     } catch(err) {
         res
             .status(500)
-            .send("Something went wrong.")
+            .send("Something went wrong, try loging out and back in.")
     }
     
-    res.status(200).send("Post saved!");
+    res.status(201).send("Post saved!");
 }
 
 export {
