@@ -2,7 +2,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import User from '../models/User';
 
 interface TokenInfo extends JwtPayload {
-    name?: string,
+    name: string,
 }
 
 type TokenVerifyResult = [boolean, TokenInfo?];
@@ -17,20 +17,28 @@ function genTokenPayload(user: User): TokenInfo {
 }
 
 function genAccessToken(payload: TokenInfo) {
-    return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: '100s' })
+    return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: '2m' })
 }
 
 function genRefreshToken(payload: TokenInfo) {
     return jwt.sign(payload, REFRESH_TOKEN_SECRET)
 }
 
-function verifyAccessTokenAndGetInfo(token: string): TokenVerifyResult {
+function verifyTokenAndGetInfo(token: string, secret: string): TokenVerifyResult {
     try {
-        let decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
+        let decoded = jwt.verify(token, secret);
         return [true, decoded as TokenInfo]
     } catch(err) {
         return [false]
     }
+}
+
+function verifyAccessTokenAndGetInfo(token: string): TokenVerifyResult {
+    return verifyTokenAndGetInfo(token, ACCESS_TOKEN_SECRET)
+}
+
+function verifyRefreshTokenAndGetInfo(token: string): TokenVerifyResult {
+    return verifyTokenAndGetInfo(token, REFRESH_TOKEN_SECRET)
 }
 
 export {
@@ -39,4 +47,5 @@ export {
     genAccessToken,
     genRefreshToken,
     verifyAccessTokenAndGetInfo,
+    verifyRefreshTokenAndGetInfo,
 }

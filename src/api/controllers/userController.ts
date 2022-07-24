@@ -9,6 +9,8 @@ import {
     genTokenPayload,
     TokenInfo
 } from "../helpers";
+import { pushRefreshToken, refreshTokenExists } from "../models/RefreshTokenStore";
+import { verifyRefreshTokenAndGetInfo } from "../helpers/authHelpers";
 
 declare global {
     namespace Express {
@@ -68,6 +70,7 @@ function login(req: Request, res: Response) {
     let payload = genTokenPayload(user);
     let accessToken = genAccessToken(payload);
     let refreshToken = genRefreshToken(payload);
+    pushRefreshToken(refreshToken);
     res
         .status(200)
         .json({
@@ -79,7 +82,33 @@ function login(req: Request, res: Response) {
 
 
 
+
+function getNewAccessToken(req: Request, res: Response) {
+    let { refreshToken } = req.body;
+    if ( !refreshToken ) return res
+        .status(400)
+        .send("Refresh token missing.");
+    if ( !refreshTokenExists(refreshToken) ) return res
+        .status(400)
+        .send("Invalid refresh not found.");
+    let [passedVerification, tokenInfo] = verifyRefreshTokenAndGetInfo(refreshToken);
+    if ( !(passedVerification && tokenInfo) ) return res
+        .status(403)
+        .send("Invalid refresh token.");
+    let user = User.findOne(tokenInfo.name);
+    let payload = genTokenPayload(user);
+    let accessToken = genAccessToken(payload);
+    res.status(201).json({
+        message: "token acceoted.",
+        accessToken,
+    })
+}
+
+
+
+
 export {
     createNewUser,
     login,
+    getNewAccessToken,
 }
