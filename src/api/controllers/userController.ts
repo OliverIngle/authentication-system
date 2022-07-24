@@ -9,7 +9,7 @@ import {
     genTokenPayload,
     TokenInfo
 } from "../helpers";
-import { pushRefreshToken, refreshTokenExists } from "../models/RefreshTokenStore";
+import { deleteToken, pushRefreshToken, refreshTokenExists } from "../models/RefreshTokenStore";
 import { verifyRefreshTokenAndGetInfo } from "../helpers/authHelpers";
 
 declare global {
@@ -90,7 +90,7 @@ function getNewAccessToken(req: Request, res: Response) {
         .send("Refresh token missing.");
     if ( !refreshTokenExists(refreshToken) ) return res
         .status(400)
-        .send("Invalid refresh not found.");
+        .send("Refresh token not found.");
     let [passedVerification, tokenInfo] = verifyRefreshTokenAndGetInfo(refreshToken);
     if ( !(passedVerification && tokenInfo) ) return res
         .status(403)
@@ -99,9 +99,21 @@ function getNewAccessToken(req: Request, res: Response) {
     let payload = genTokenPayload(user);
     let accessToken = genAccessToken(payload);
     res.status(201).json({
-        message: "token acceoted.",
+        message: "token accepted.",
         accessToken,
     })
+}
+
+
+
+
+function logout(req: Request, res: Response) {
+    let { refreshToken } = req.body;
+    if ( !refreshToken ) return res
+        .status(400)
+        .send("Refresh token missing.");
+    deleteToken(refreshToken);
+    res.status(203).send("Token successfully deleted.")
 }
 
 
@@ -110,5 +122,6 @@ function getNewAccessToken(req: Request, res: Response) {
 export {
     createNewUser,
     login,
+    logout,
     getNewAccessToken,
 }

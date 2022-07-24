@@ -9,3 +9,7 @@ export function refreshTokenExists(token: string): boolean {
         return item === token;
     })
 }
+
+export function deleteToken(token: string): void {
+    refreshTokenList = refreshTokenList.filter(item => item !== token);
+}

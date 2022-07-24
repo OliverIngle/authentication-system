@@ -1,4 +1,4 @@
-import { pushRefreshToken, refreshTokenExists } from "../src/api/models/RefreshTokenStore";
+import { deleteToken, pushRefreshToken, refreshTokenExists } from "../src/api/models/RefreshTokenStore";
 
 describe("Array that storres refresh tokens", () => {
 
@@ -13,6 +13,11 @@ describe("Array that storres refresh tokens", () => {
     
     test("return flalse if token doesent exist", () => {
         expect(refreshTokenExists('token2')).toBe(false);
+    });
+
+    test("deletes a token from the list", () => {
+        deleteToken("token1");
+        expect(refreshTokenExists('token1')).toBe(false);
     });
 
 });
