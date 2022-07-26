@@ -1,5 +1,5 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 
 interface TokenInfo extends JwtPayload {
     name: string,
@@ -10,14 +10,14 @@ type TokenVerifyResult = [boolean, TokenInfo?];
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET!;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 
-function genTokenPayload(user: User): TokenInfo {
+function genTokenPayload(user: IUser): TokenInfo {
     return {
-        name: user.username
+        name: user.name
     }
 }
 
 function genAccessToken(payload: TokenInfo) {
-    return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: '2m' })
+    return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: '2h' })
 }
 
 function genRefreshToken(payload: TokenInfo) {

@@ -1,16 +1,20 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken"
-import User from "../models/User";
+import User, { IUser } from "../models/User";
 import {
     hash,
     compare,
     genAccessToken,
     genRefreshToken,
     genTokenPayload,
-    TokenInfo
+    TokenInfo,
+    verifyRefreshTokenAndGetInfo,
 } from "../helpers";
-import { deleteToken, pushRefreshToken, refreshTokenExists } from "../models/RefreshTokenStore";
-import { verifyRefreshTokenAndGetInfo } from "../helpers/authHelpers";
+import RefreshTokenStore, { IRefreshToken } from "../models/RefreshTokenStore";
+
+
+
+
 
 declare global {
     namespace Express {
@@ -23,51 +27,67 @@ declare global {
 
 
 
+
 function createNewUser(req: Request, res: Response) {
+
     let { username, password } = req.body;
     if ( !(username && password) ) {
         return res
             .status(400)
             .send("Fields missing.")
     }
+
     let passwordHash = hash(password);
-    if ( !User.save(new User(username, passwordHash)) ) {
-        return res
-            .status(403)
-            .send("Username already taken.")
-    }
-    res
-        .status(201)
-        .send("User succesfully created..");
+    let user: IUser = new User({
+        name: username,
+        passwordHash,
+    });
+
+    user
+        .save()
+        .then(doc => {
+            res
+                .status(201)
+                .send("User succesfully created.");
+        })
+        .catch(err => {
+            res
+                .status(400)
+                .send("User already exists.")
+        })
+
 }
 
 
 
 
-function login(req: Request, res: Response) {
+
+async function login(req: Request, res: Response) {
+
     let { username, password } = req.body;
     if ( !(username && password) ) {
         return res
             .status(400)
             .send("Fields missing.")
     }
-    let user: User;
-    try {
-        user = User.findOne(username);
-    } catch(err) {
+
+    let currentUser: IUser | null = await User.findOne({name: username });
+    if (!currentUser) {
         return res
             .status(404)
-            .send((err as Error).message)
+            .send("User not found.")
     }
-    if (!compare(user.passwordHash, password)) {
+
+    if (!compare(currentUser.passwordHash, password)) {
         return res
             .status(401)
-            .send("Login failed.")
+            .send("Incorrect password.")
     }
-    let payload = genTokenPayload(user);
+
+    let payload = genTokenPayload(currentUser);
     let accessToken = genAccessToken(payload);
     let refreshToken = genRefreshToken(payload);
-    pushRefreshToken(refreshToken);
+    await RefreshTokenStore.create({ token: refreshToken, });
     res
         .status(201)
         .json({
@@ -80,37 +100,55 @@ function login(req: Request, res: Response) {
 
 
 
-function getNewAccessToken(req: Request, res: Response) {
+
+async function getNewAccessToken(req: Request, res: Response) {
+    
     let { refreshToken } = req.body;
     if ( !refreshToken ) return res
         .status(400)
-        .send("Refresh token missing.");
-    if ( !refreshTokenExists(refreshToken) ) return res
-        .status(404)
-        .send("Refresh token not found.");
+        .send("Refresh token field missing.");
+
     let [passedVerification, tokenInfo] = verifyRefreshTokenAndGetInfo(refreshToken);
     if ( !(passedVerification && tokenInfo) ) return res
         .status(401)
         .send("Invalid refresh token.");
-    let user = User.findOne(tokenInfo.name);
+
+    let tokenExists = await RefreshTokenStore.exists({ token: refreshToken });
+    if ( !tokenExists ) return res
+        .status(404)
+        .send("Refresh token has been invalidated.");
+
+
+    let user: IUser | null = await User.findOne({ name: tokenInfo.name });
+    if (!user) {
+        return res
+            .status(404)
+            .send("User not found.")
+    }
+
     let payload = genTokenPayload(user);
-    let accessToken = genAccessToken(payload);
-    res.status(201).json({
-        message: "token accepted.",
-        accessToken,
-    })
+    res
+        .status(200)
+        .json({
+            accessToken: genAccessToken(payload),
+        });
+
 }
 
 
 
 
-function logout(req: Request, res: Response) {
+
+async function logout(req: Request, res: Response) {
+
     let { refreshToken } = req.body;
     if ( !refreshToken ) return res
         .status(400)
         .send("Refresh token missing.");
-    deleteToken(refreshToken);
-    res.status(200).send("Token successfully deleted.")
+
+    await RefreshTokenStore.deleteOne({ token: refreshToken });
+    res.status(200).send("Token successfully deleted.");
+
 }
 
 

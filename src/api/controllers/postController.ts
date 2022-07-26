@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import Post from "../models/Post";
+import Post, { IPost } from "../models/Post";
 import User from "../models/User";
 import { TokenInfo } from "../helpers";
+import { ALL } from "dns";
 
-function getPosts(req: Request, res: Response) {
-    res.status(200).json({
-        posts: Post.getAll()
-    });
+async function getPosts(req: Request, res: Response) {
+    let posts: IPost[] = await Post.find();
+    res.status(200).json({posts});
 }
 
 function newPost(req: Request, res: Response) {
@@ -15,15 +15,16 @@ function newPost(req: Request, res: Response) {
     if (!token) {
         return res.status(401).send("Login required.")
     }
-
-    try {
-        let username = token.name;
-        new Post(username, text).save()
-    } catch(err) {
+    let username = token.name;
+    let post: IPost = new Post({
+        username,
+        text,
+    });
+    post.save().catch(err => {
         res
             .status(500)
-            .send("Something went wrong, try loging out and back in.")
-    }
+            .send("Something went wrong, try loging out and back in.");
+    })
     
     res.status(201).send("Post saved!");
 }

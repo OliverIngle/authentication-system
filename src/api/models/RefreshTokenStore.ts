@@ -1,15 +1,17 @@
-let refreshTokenList: string[] = [];
+import { Document, Schema, model } from "mongoose";
 
-export function pushRefreshToken(token: string): void {
-    refreshTokenList.push(token);
+interface IRefreshToken extends Document {
+    token: string,
 }
 
-export function refreshTokenExists(token: string): boolean {
-    return refreshTokenList.some((item) => {
-        return item === token;
-    })
-}
+const refreshTokenSchema = new Schema<IRefreshToken>({
+    token: {
+        type: String,
+        required: true,
+    }
+});
 
-export function deleteToken(token: string): void {
-    refreshTokenList = refreshTokenList.filter(item => item !== token);
-}
+const RefreshTokenStore = model<IRefreshToken>('RefreshTokenStore', refreshTokenSchema);
+
+export default RefreshTokenStore;
+export { IRefreshToken }

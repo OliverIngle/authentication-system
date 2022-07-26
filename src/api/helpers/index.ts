@@ -5,7 +5,9 @@ import {
     genRefreshToken,
     genTokenPayload,
     verifyAccessTokenAndGetInfo,
+    verifyRefreshTokenAndGetInfo,
 } from "./authHelpers";
+import { errorHanler } from "./errorHandlers";
 
 export {
     TokenInfo,
@@ -15,4 +17,6 @@ export {
     genRefreshToken,
     genTokenPayload,
     verifyAccessTokenAndGetInfo,
+    verifyRefreshTokenAndGetInfo,
+    errorHanler,
 }

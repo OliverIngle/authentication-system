@@ -1,18 +1,23 @@
-export default class Post {
-    
-    constructor(
-        public username: string,
-        public text: string
-){}
+import { Schema, model, Document } from "mongoose";
 
-    static getAll(): Post[] {
-        return postList;
-    }
-
-    save(): void {
-        postList.push(this);
-    }
-
+interface IPost extends Document {
+    username: string,
+    text: string;
 }
 
-let postList: Post[] = [];
+const postSchema = new Schema<IPost>({
+    username: {
+        type: String,
+        required: true,
+    },
+    text: {
+        type: String,
+        required: true,
+    },
+});
+
+const Post = model<IPost>('Post', postSchema);
+export default Post;
+export {
+    IPost,
+}
